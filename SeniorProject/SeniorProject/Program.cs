@@ -27,44 +27,11 @@ namespace SeniorProject
             List<DirectoryInfo> subDirecs = ContainsDir(filepath);
             foreach(DirectoryInfo d in subDirecs)
             {
-                Console.WriteLine(d.ToString());
-
+                int layer = 0;
                 List<DirectoryInfo> subSubs = ContainsDir(d.FullName);
-
-
-                if(subSubs.Count != 0)
-                {
-                    foreach(DirectoryInfo sd in subSubs)
-                    {
-                        Console.WriteLine("   -" + sd.ToString());
-                    }
-                }
+                Console.WriteLine(d.ToString() + ": " + subSubs.Count);
                 
             }
-            /*
-            //Takes the filepath, gets relevant information about the directory
-            DirectoryInfo di = new DirectoryInfo(filepath);
-            //Makes an array of the files in the array
-            DirectoryInfo[] da = di.GetDirectories();
-
-            //Checks the directories to see if they contain directories
-            foreach (DirectoryInfo d in da)
-            {
-                Console.WriteLine(d.ToString());
-                DirectoryInfo newDi = new DirectoryInfo(d.FullName);
-                DirectoryInfo[] newDa = newDi.GetDirectories();
-
-                if (newDa.Length != 0)
-                {
-                    foreach (DirectoryInfo newD in newDa)
-                    {
-                        Console.WriteLine("   - " + newD.ToString());
-                        //Searcher(newD.ToString());
-                    }
-
-
-                }
-            } **/
 
         }
 
@@ -74,29 +41,30 @@ namespace SeniorProject
         {
             //List of subdirectories
             List<DirectoryInfo> littleDir = new List<DirectoryInfo>();
+            int layer = 0;
             
             DirectoryInfo di = new DirectoryInfo(dir);
+            List<DirectoryInfo> dirlist = 
             try
             {
                 if(di.GetDirectories().Length != 0)
                 {
-                    DirectoryInfo[] diArr = di.GetDirectories();
+                    layer++;
+                    foreach(DirectoryInfo d in di)
+                    {
+
+                    }
+                    /*DirectoryInfo[] diArr = di.GetDirectories();
                     foreach (DirectoryInfo d in diArr)
                     {
                         littleDir.Add(d);
-                    }
-                }
-                /*DirectoryInfo[] diArr = di.GetDirectories();
-                //checks to see if the direc contains any direcs, otherwise returns a simple message
-                if (diArr.Length == 0)
-                {
-                    Console.WriteLine("This directory contains no subdirectories");
+                        
+                    }**/
                 }
                 else
                 {
-                    //if it does contain subdirecs, it returns them in a list
-                    
-                }**/
+                    Console.WriteLine(layer);
+                }
 
                 return littleDir;
             }
