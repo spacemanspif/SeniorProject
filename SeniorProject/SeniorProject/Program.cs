@@ -15,64 +15,56 @@ namespace SeniorProject
     {
         static void Main(string[] args)
         {
-            Searcher("D:/Music");
-        }
+            string fp = "D:/Music";
+            
+            Boolean hasDir = ContainsDir(fp);
+            Console.WriteLine(hasDir);
 
-        //Method to take user inputted filepath and look for music files in it
-        static void Searcher(string filepath)
-        {
-            //testing
-            Console.WriteLine(filepath + "\n");
-
-            List<DirectoryInfo> subDirecs = ContainsDir(filepath);
-            foreach(DirectoryInfo d in subDirecs)
+            if(hasDir == true)
             {
-                int layer = 0;
-                List<DirectoryInfo> subSubs = ContainsDir(d.FullName);
-                Console.WriteLine(d.ToString() + ": " + subSubs.Count);
-                
+                Iterate(fp);
             }
 
+            
         }
 
-        //Method to check for directories in a directory, and return subdirectories
-        //allows for easier recursion, without needing to loop whole Searcher method
-        static List<DirectoryInfo> ContainsDir(string dir)
+        static Boolean ContainsDir(string fp)
         {
-            //List of subdirectories
-            List<DirectoryInfo> littleDir = new List<DirectoryInfo>();
-            int layer = 0;
-            
-            DirectoryInfo di = new DirectoryInfo(dir);
-            List<DirectoryInfo> dirlist = 
+            Boolean hasDir = false;
             try
             {
-                if(di.GetDirectories().Length != 0)
+                DirectoryInfo dir = new DirectoryInfo(fp);
+                int layers = dir.GetDirectories().Length;
+                if(layers != 0)
                 {
-                    layer++;
-                    foreach(DirectoryInfo d in di)
-                    {
-
-                    }
-                    /*DirectoryInfo[] diArr = di.GetDirectories();
-                    foreach (DirectoryInfo d in diArr)
-                    {
-                        littleDir.Add(d);
-                        
-                    }**/
-                }
-                else
-                {
-                    Console.WriteLine(layer);
+                    hasDir = true;
                 }
 
-                return littleDir;
             }
-            catch (DirectoryNotFoundException dirNotFound)
+            catch(DirectoryNotFoundException dnfe)
             {
-               Debug.WriteLine(dirNotFound.Message);
+                Console.WriteLine("Directory not found", dnfe.Message);    
             }
-            return littleDir;
+            return hasDir;
         }
-    }
+
+        static void Iterate(string fp)
+        {
+            DirectoryInfo di = new DirectoryInfo(fp);
+            List<DirectoryInfo> dil = di.GetDirectories().ToList();
+
+            foreach (DirectoryInfo dilIt in dil)
+            {
+                fp = dilIt.FullName;
+                Console.WriteLine(dilIt.Name + ": " + ContainsDir(fp));
+
+                if(ContainsDir(fp))
+                {
+                    Iterate(fp);
+                }
+            }
+
+
+        }
+    } 
 }
