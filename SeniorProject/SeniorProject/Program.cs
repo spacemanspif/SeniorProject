@@ -7,7 +7,6 @@ using System.IO;
 using System.Collections;
 using System.Diagnostics;
 
-//TODO switch writelining to ContainsDirec, that way the recursive bits are done in the method call
 
 namespace SeniorProject
 {
@@ -22,10 +21,8 @@ namespace SeniorProject
 
             if(hasDir == true)
             {
-                Iterate(fp);
+                Iterate(fp,0);
             }
-
-            
         }
 
         static Boolean ContainsDir(string fp)
@@ -48,11 +45,10 @@ namespace SeniorProject
             return hasDir;
         }
 
-        static void Iterate(string fp)
+        static void Iterate(string fp, int count)
         {
             DirectoryInfo di = new DirectoryInfo(fp);
             List<DirectoryInfo> dil = di.GetDirectories().ToList();
-
             foreach (DirectoryInfo dilIt in dil)
             {
                 fp = dilIt.FullName;
@@ -60,11 +56,15 @@ namespace SeniorProject
 
                 if(ContainsDir(fp))
                 {
-                    Iterate(fp);
+                    count++;
+                    for (int i=0; i < count;i++ )
+                    {
+                        Console.Write("   ");
+                    }
+                    Iterate(fp,count);
+                    count--;
                 }
             }
-
-
         }
     } 
 }
