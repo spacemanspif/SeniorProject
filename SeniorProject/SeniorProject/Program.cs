@@ -65,25 +65,31 @@ namespace SeniorProject
                 Console.WriteLine(currentDir.Name + ": " + ContainsDir(filePath));
 
                 //TESTING FindSongs
-                FindSongs(filePath, layer);
+                List<FileInfo> musicFiles = FindSongs(filePath);
+                Console.WriteLine("Complete, found " + musicFiles.Count + " different files");
 
                 //then checks for any other subdirs, to continue on the work
                 if (ContainsDir(filePath)) Iterate(filePath, layer + 1);
             }
         }
-        static void FindSongs(string filePath, int layer)
+        //method to find all of the files in a dir that meet the file extension requirements, and return them in a list
+        static List<FileInfo> FindSongs(string filePath)
         {
             DirectoryInfo dirIn = new DirectoryInfo(filePath);
-            List<FileInfo> fileIn = dirIn.GetFiles().ToList();
+            //first list that just takes all the files in the dir
+            List<FileInfo> files = dirIn.GetFiles().ToList();
+            //Second list to hold the files we want to return
+            List<FileInfo> musicFiles = new List<FileInfo>();
             
-            foreach (FileInfo fileInIt in fileIn)
+            foreach (FileInfo thisFile in files)
             {
-                for (int i = 0; i <= layer; i++)
+                if (thisFile.Extension == ".flac" || thisFile.Extension == ".mp3" || thisFile.Extension == ".m4a" || thisFile.Extension == ".wav" || thisFile.Extension == ".wma")
                 {
-                    Console.Write("    ");
-                    Console.WriteLine(fileInIt.Name);
+                    musicFiles.Add(thisFile);
                 }
             }
+            //returns the list with only the files that have the right extensions
+            return musicFiles;
         }
     } 
 }
