@@ -70,7 +70,9 @@ namespace SeniorProject
 
                 //then checks for any other subdirs, to continue on the work
                 if (ContainsDir(filePath)) Iterate(filePath, layer + 1);
+                SongProperties(musicFiles);
             }
+            
         }
         //method to find all of the files in a dir that meet the file extension requirements, and return them in a list
         static List<FileInfo> FindSongs(string filePath)
@@ -90,6 +92,15 @@ namespace SeniorProject
             }
             //returns the list with only the files that have the right extensions
             return musicFiles;
+        }
+        static void SongProperties(List<FileInfo> songList)
+        {
+            
+            foreach(FileInfo fileInfo in songList)
+            {
+                TagLib.File tf = TagLib.File.Create(fileInfo.FullName);
+                Console.WriteLine(tf.Tag.Title + ", " + tf.Tag.Year + "- " + tf.Tag.FirstGenre + ", " + tf.Tag.Track);
+            }
         }
     } 
 }
