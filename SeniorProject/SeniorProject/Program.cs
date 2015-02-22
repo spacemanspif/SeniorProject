@@ -93,14 +93,18 @@ namespace SeniorProject
             //returns the list with only the files that have the right extensions
             return musicFiles;
         }
-        static void SongProperties(List<FileInfo> songList)
+        //method to take fileInfo and glean relevant song information from it, then compile that information into a new Song object, and compile those songs in a list
+        static List<Song> SongProperties(List<FileInfo> songFileInfo)
         {
-            
-            foreach(FileInfo fileInfo in songList)
+            List<Song> songList = new List<Song>();
+            foreach(FileInfo fileInfo in songFileInfo)
             {
+                //utilizes imported Taglib-sharp to know where relevant information is, based on filetype
                 TagLib.File tf = TagLib.File.Create(fileInfo.FullName);
-                Console.WriteLine(tf.Tag.Title + ", " + tf.Tag.Year + "- " + tf.Tag.FirstGenre + ", " + tf.Tag.Track);
+                //Creates a new Song object with this information
+                Song s = new Song(1,1,tf.Tag.Title,tf.Tag.Track,tf.Length,tf.Tag.FirstGenre,tf.Tag.Genres[1],false, false, false);
             }
+            return songList;
         }
     } 
 }
