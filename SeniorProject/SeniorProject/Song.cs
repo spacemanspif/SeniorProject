@@ -11,38 +11,32 @@ namespace SeniorProject
         public int AlbumID;
         public int ArtistID;
         public String Title;
-        public String Artist;
-        public int TrackNumber;
-        public int TrackLength;
+        public uint TrackNumber;
+        public long TrackLength;
         public String Genre;
         public String SubGenre;
         public Boolean AudioBook;
         public Boolean Instrumental;
         public Boolean Soundtrack;
-        private int p1;
-        private int p2;
-        private string p3;
-        private uint p4;
-        private long p5;
-        private string p6;
-        private string p7;
-        private bool p8;
-        private bool p9;
-        private bool p10;
 
-        public Song(int AlbumID, int ArtistID, string Title, uint TrackNum, long Length, string Genre, string SubGenre, bool Audiobook, bool Instrumental, bool Soundtrack)
+        public Song(int alid, int arid, string t, uint tnum, long len, string gen, bool ab, bool ins, bool st)
         {
             // TODO: Complete member initialization
-            this.p1 = AlbumID;
-            this.p2 = ArtistID;
-            this.p3 = Title;
-            this.p4 = TrackNum;
-            this.p5 = Length;
-            this.p6 = Genre;
-            this.p7 = SubGenre;
-            this.p8 = AudioBook;
-            this.p9 = Instrumental;
-            this.p10 = Soundtrack;
+            this.AlbumID = alid;
+            this.ArtistID = arid;
+            this.Title = t;
+            this.TrackNumber = tnum;
+            this.TrackLength = len;
+            this.Genre = gen;
+            //this.SubGenre = sgen;
+            this.AudioBook = ab;
+            this.Instrumental = ins;
+            this.Soundtrack = st;
+        }
+
+        public Song(string t)
+        {
+            this.Title = t;
         }
     }
 }

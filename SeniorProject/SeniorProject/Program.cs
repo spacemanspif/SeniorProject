@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Collections;
 using System.Diagnostics;
+using System.Data.SqlClient;
 
 
 namespace SeniorProject
@@ -25,6 +26,28 @@ namespace SeniorProject
             if(hasDir)
             {
                 Iterate(filePath,0);
+            }
+
+            //opens a connection to the SQL db
+           using(SqlConnection conn = new SqlConnection())
+           {
+                conn.ConnectionString="Server=ADA\\INFO210;Database=DiscoFish;User=sa;Password=changethislater";
+                conn.Open();
+                //SqlCommand command = new SqlCommand("INSERT INTO Album VALUES(068,1,Rubber Soul,DATEFROMPARTS(1965,12,03) )",conn);
+                
+               //test SQL command
+               SqlCommand command = new SqlCommand("SELECT * FROM Album;", conn);
+                
+               //new reader to pull data from connected SQL db
+               using (SqlDataReader reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        // write the data on to the screen
+                        Console.WriteLine("\n" + "ArtistID" + "\t" + "AlbumID" + "\t\t" + "Album" + "\t\t" + "Release Date");
+                        Console.WriteLine(reader[0].ToString() + "\t\t" + reader[1].ToString() + "\t\t" + reader[2].ToString() + reader[3].ToString());
+                    }
+                }
             }
         }
 
@@ -70,7 +93,7 @@ namespace SeniorProject
 
                 //then checks for any other subdirs, to continue on the work
                 if (ContainsDir(filePath)) Iterate(filePath, layer + 1);
-                SongProperties(musicFiles);
+                //SongProperties(musicFiles);
             }
             
         }
@@ -85,6 +108,7 @@ namespace SeniorProject
             
             foreach (FileInfo thisFile in files)
             {
+                //current list of accepted file types, might add more later
                 if (thisFile.Extension == ".flac" || thisFile.Extension == ".mp3" || thisFile.Extension == ".m4a" || thisFile.Extension == ".wav" || thisFile.Extension == ".wma")
                 {
                     musicFiles.Add(thisFile);
@@ -97,14 +121,27 @@ namespace SeniorProject
         static List<Song> SongProperties(List<FileInfo> songFileInfo)
         {
             List<Song> songList = new List<Song>();
-            foreach(FileInfo fileInfo in songFileInfo)
+            if (songFileInfo.Count != 0)
             {
-                //utilizes imported Taglib-sharp to know where relevant information is, based on filetype
-                TagLib.File tf = TagLib.File.Create(fileInfo.FullName);
-                //Creates a new Song object with this information
-                Song s = new Song(1,1,tf.Tag.Title,tf.Tag.Track,tf.Length,tf.Tag.FirstGenre,tf.Tag.Genres[1],false, false, false);
+                foreach (FileInfo fileInfo in songFileInfo)
+                {
+                    //utilizes imported Taglib-sharp to know where relevant information is, based on filetype
+                    TagLib.File tf = TagLib.File.Create(fileInfo.FullName);
+                    //Creates a new Song object with this information
+                    //NOTE: Currently having problems if Genres[] only has the one, removed Subgenre param for the time being
+                    Song s = new Song(1, 1, tf.Tag.Title, tf.Tag.Track, tf.Length, tf.Tag.FirstGenre, false, false, false);
+                    Console.WriteLine("\tAdded song " + tf.Tag.Title);
+                    songList.Add(s);
+                }
             }
             return songList;
+        }
+        static void AddSongToDB(List<Song> songList, SqlConnection conn)
+        {
+            foreach(Song song in songList)
+            {
+                SqlCommand command = new SqlCommand("INSERT INTO Songs;", conn);
+            }
         }
     } 
 }
