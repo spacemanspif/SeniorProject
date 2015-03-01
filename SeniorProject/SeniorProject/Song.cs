@@ -12,14 +12,14 @@ namespace SeniorProject
         public int ArtistID;
         public String Title;
         public uint TrackNumber;
-        public long TrackLength;
+        public DateTime TrackLength;
         public String Genre;
         public String SubGenre;
         public Boolean AudioBook;
         public Boolean Instrumental;
         public Boolean Soundtrack;
 
-        public Song(int alid, int arid, string t, uint tnum, long len, string gen, bool ab, bool ins, bool st)
+        public Song(int alid, int arid, string t, uint tnum, DateTime len, string gen, bool ab, bool ins, bool st)
         {
             // TODO: Complete member initialization
             this.AlbumID = alid;

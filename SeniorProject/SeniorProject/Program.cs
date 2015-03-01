@@ -20,34 +20,36 @@ namespace SeniorProject
             
             //runs method to check for subdirecs
             Boolean hasDir = ContainsDir(filePath);
-            Console.WriteLine(hasDir);
 
             //if it has a subdirectory, checks those subdirectories
             if(hasDir)
             {
-                Iterate(filePath,0);
-            }
+                 List<FileInfo> musicFiles = Iterate(filePath,0);
+                 List<Song> songList = SongProperties(musicFiles);
 
-            //opens a connection to the SQL db
-           using(SqlConnection conn = new SqlConnection())
-           {
-                conn.ConnectionString="Server=ADA\\INFO210;Database=DiscoFish;User=sa;Password=changethislater";
-                conn.Open();
-                //SqlCommand command = new SqlCommand("INSERT INTO Album VALUES(068,1,Rubber Soul,DATEFROMPARTS(1965,12,03) )",conn);
-                
-               //test SQL command
-               SqlCommand command = new SqlCommand("SELECT * FROM Album;", conn);
-                
-               //new reader to pull data from connected SQL db
-               using (SqlDataReader reader = command.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        // write the data on to the screen
-                        Console.WriteLine("\n" + "ArtistID" + "\t" + "AlbumID" + "\t\t" + "Album" + "\t\t" + "Release Date");
-                        Console.WriteLine(reader[0].ToString() + "\t\t" + reader[1].ToString() + "\t\t" + reader[2].ToString() + reader[3].ToString());
-                    }
-                }
+                 //opens a connection to the SQL db
+                 using (SqlConnection conn = new SqlConnection())
+                 {
+                     conn.ConnectionString = "Server=ADA\\INFO210;Database=DiscoFish;User=sa;Password=changethislater";
+                     conn.Open();
+
+                     AddSongToDB(songList, conn);
+
+                     //test SQL command
+                     SqlCommand command = new SqlCommand("SELECT * FROM Songs;", conn);
+
+                     //new reader to pull data from connected SQL db
+                     /*using (SqlDataReader reader = command.ExecuteReader())
+                     {
+                         Console.WriteLine("Step 1");
+                         while(reader.Read())
+                         {
+                             // write the data on to the screen
+                             Console.WriteLine("Step 2");
+                             Console.WriteLine(reader[0].ToString() + "\t\t" + reader[1].ToString() + "\t\t" + reader[2].ToString() + reader[3].ToString());
+                         }
+                     }*/
+                 }
             }
         }
 
@@ -68,11 +70,12 @@ namespace SeniorProject
             return false;
         }
         //method to take a filepath, and int representing which layer of subdir its in, and find, display (and eventually copy) information about all subdirecs in it
-        static void Iterate(string filePath, int layer)
+        static List<FileInfo> Iterate(string filePath, int layer)
         {
 
             DirectoryInfo dir = new DirectoryInfo(filePath);
             List<DirectoryInfo> dirList = dir.GetDirectories().ToList();
+            List<FileInfo> musicFiles = new List<FileInfo>();
 
             //iterates through each iten in the list
             foreach (DirectoryInfo currentDir in dirList)
@@ -88,13 +91,14 @@ namespace SeniorProject
                 Console.WriteLine(currentDir.Name + ": " + ContainsDir(filePath));
 
                 //TESTING FindSongs
-                List<FileInfo> musicFiles = FindSongs(filePath);
+                musicFiles = FindSongs(filePath);
                 Console.WriteLine("Complete, found " + musicFiles.Count + " different files");
 
                 //then checks for any other subdirs, to continue on the work
                 if (ContainsDir(filePath)) Iterate(filePath, layer + 1);
-                //SongProperties(musicFiles);
             }
+
+            return musicFiles;
             
         }
         //method to find all of the files in a dir that meet the file extension requirements, and return them in a list
@@ -129,7 +133,8 @@ namespace SeniorProject
                     TagLib.File tf = TagLib.File.Create(fileInfo.FullName);
                     //Creates a new Song object with this information
                     //NOTE: Currently having problems if Genres[] only has the one, removed Subgenre param for the time being
-                    Song s = new Song(1, 1, tf.Tag.Title, tf.Tag.Track, tf.Length, tf.Tag.FirstGenre, false, false, false);
+
+                    Song s = new Song(1, 1, tf.Tag.Title, tf.Tag.Track, new DateTime(tf.Length), tf.Tag.FirstGenre, false, false, false);
                     Console.WriteLine("\tAdded song " + tf.Tag.Title);
                     songList.Add(s);
                 }
@@ -140,7 +145,14 @@ namespace SeniorProject
         {
             foreach(Song song in songList)
             {
-                SqlCommand command = new SqlCommand("INSERT INTO Songs;", conn);
+                SqlCommand insertCommand = new SqlCommand("INSERT INTO Songs([Song Title],[Album ID],[Artist ID],[Track Length]) VALUES('"+song.Title+"',"+song.AlbumID+","+song.ArtistID+",'"+song.TrackLength+"');", conn);
+                using (SqlDataReader reader = insertCommand.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        Console.WriteLine("Just added " + song.Title + " to the db");
+                    }
+                }
             }
         }
     } 
