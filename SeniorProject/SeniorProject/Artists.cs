@@ -10,5 +10,10 @@ namespace SeniorProject
     {
         public int ArtistsID;
         public String Name;
+
+        public Artists(string n)
+        {
+            Name = n;
+        }
     }
 }

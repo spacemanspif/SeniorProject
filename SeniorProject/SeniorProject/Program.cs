@@ -24,7 +24,8 @@ namespace SeniorProject
             //if it has a subdirectory, checks those subdirectories
             if (hasDir)
             {
-                List<FileInfo> musicFiles = Iterate(filePath, 0);
+                List<FileInfo> musicFiles = new List<FileInfo>();
+                musicFiles = Iterate(filePath, 0, musicFiles);
                 List<Song> songList = SongProperties(musicFiles);
 
                 //opens a connection to the SQL db
@@ -34,10 +35,7 @@ namespace SeniorProject
                     conn.Open();
 
                     AddSongToDB(songList, conn);
-
-                    //test SQL command
-                    SqlCommand command = new SqlCommand("SELECT * FROM Songs;", conn);
-                    command.ExecuteReader();
+                    AddArtistsToDB(musicFiles, conn);
                 }
             }
         }
@@ -59,12 +57,11 @@ namespace SeniorProject
             return false;
         }
         //method to take a filepath, and int representing which layer of subdir its in, and find, display (and eventually copy) information about all subdirecs in it
-        static List<FileInfo> Iterate(string filePath, int layer)
+        static List<FileInfo> Iterate(string filePath, int layer, List<FileInfo> musicFiles)
         {
 
             DirectoryInfo dir = new DirectoryInfo(filePath);
             List<DirectoryInfo> dirList = dir.GetDirectories().ToList();
-            List<FileInfo> musicFiles = new List<FileInfo>();
 
             //iterates through each iten in the list
             foreach (DirectoryInfo currentDir in dirList)
@@ -74,20 +71,20 @@ namespace SeniorProject
                 //if the directory is a subdir (or subsubdir), writes a tab for each "sub"
                 for (int i = 0; i < layer; i++)
                 {
-                    Console.Write("    ");
+                    Console.Write("\t");
                 }
                 //then writes the name, and if it contains any more subdirs
                 Console.WriteLine(currentDir.Name + ": " + ContainsDir(filePath));
 
                 //adds the found files to a temp holder, which is then dumped into the overall music list
                 List<FileInfo> thisIteration = FindSongs(filePath);
-                foreach(FileInfo thisSong in thisIteration)
+                foreach (FileInfo thisSong in thisIteration)
                 {
                     musicFiles.Add(thisSong);
                 }
 
                 //then checks for any other subdirs, to continue on the work
-                if (ContainsDir(filePath)) Iterate(filePath, layer + 1);
+                if (ContainsDir(filePath)) Iterate(filePath, layer + 1, musicFiles);
             }
 
             return musicFiles;
@@ -121,14 +118,21 @@ namespace SeniorProject
             {
                 foreach (FileInfo fileInfo in songFileInfo)
                 {
-                    //utilizes imported Taglib-sharp to know where relevant information is, based on filetype
-                    TagLib.File tf = TagLib.File.Create(fileInfo.FullName);
-                    //Creates a new Song object with this information
-                    //NOTE: Currently having problems if Genres[] only has the one, removed Subgenre param for the time being
+                    try
+                    {
+                        //utilizes imported Taglib-sharp to know where relevant information is, based on filetype
+                        TagLib.File tf = TagLib.File.Create(fileInfo.FullName);
+                        //Creates a new Song object with this information
+                        //NOTE: Currently having problems if Genres[] only has the one, removed Subgenre param for the time being
 
-                    Song s = new Song(1, 1, tf.Tag.Title, tf.Tag.Track, new DateTime(tf.Length), tf.Tag.FirstGenre, false, false, false);
-                    Console.WriteLine("\tAdded song " + tf.Tag.Title);
-                    songList.Add(s);
+                        Song s = new Song(1, 1, tf.Tag.Title, tf.Tag.Track, tf.Properties.Duration, tf.Tag.FirstGenre, false, false, false);
+                        Console.WriteLine("\tAdded song " + tf.Tag.Title);
+                        songList.Add(s);
+                    }
+                    catch (TagLib.CorruptFileException corrupt)
+                    {
+                        Console.WriteLine("\t" + corrupt.Message);
+                    }
                 }
             }
             return songList;
@@ -138,17 +142,77 @@ namespace SeniorProject
         {
             foreach (Song song in songList)
             {
-                //checks to see if song already exists in db
-                SqlCommand insertCommand = new SqlCommand("INSERT INTO Songs([Song Title],[Album ID],[Artist ID],[Track Length],[Track Number]) SELECT '"+song.Title+"',"+song.AlbumID+","+song.ArtistID+",'"+song.TrackLength+"',"+song.TrackNumber+" WHERE NOT EXISTS (SELECT * FROM Songs WHERE [Song Title] = '"+song.Title+"');", conn);
-                using (SqlDataReader reader = insertCommand.ExecuteReader())
+                try
                 {
-                    while (reader.Read())
+                    String cleanTitle = (song.Title).Replace("'", "");
+
+                    //checks to see if song already exists in db
+                    SqlCommand insertCommand = new SqlCommand("INSERT INTO Songs([Song Title],[Album ID],[Artist ID],[Track Length],[Track Number]) SELECT '" + 
+                        cleanTitle + "'," + song.AlbumID + "," + song.ArtistID + ",'" + song.TrackLength + "'," + song.TrackNumber + 
+                        " WHERE NOT EXISTS (SELECT * FROM Songs WHERE [Song Title] = '" + cleanTitle + "');", conn);
+                    using (SqlDataReader reader = insertCommand.ExecuteReader())
                     {
-                        Console.WriteLine("Just added " + song.Title + " to the db");
+                        while (reader.Read())
+                        {
+                            Console.WriteLine("Added " + song.Title + " to the db");
+                        }
                     }
                 }
+                catch(SqlException sql)
+                {
+                    Console.WriteLine(sql.Message);
+                }
+                catch(NullReferenceException nre)
+                {
+                    Console.WriteLine(nre.Message);
+                }
+            }
+        }
+        static void AddArtistsToDB(List<FileInfo> songFileList, SqlConnection conn)
+        {
+            if (songFileList.Count != 0)
+            {
+                foreach (FileInfo fileInfo in songFileList)
+                {
+                    try
+                    {
+                        //utilizes imported Taglib-sharp to know where relevant information is, based on filetype
+                        TagLib.File tf = TagLib.File.Create(fileInfo.FullName);
 
-
+                        Artists a = new Artists(tf.Tag.FirstAlbumArtist);
+                        String cleanName = (a.Name).Replace("'", "");
+                        SqlCommand updateCommand = new SqlCommand("INSERT INTO Artists([Artists Name]) SELECT('" + cleanName + 
+                                                                    "')WHERE NOT EXISTS (SELECT * FROM Artists WHERE [Artists Name] = '" + cleanName + "');",conn);
+                        using (SqlDataReader reader = updateCommand.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                Console.WriteLine("Added " + a.Name + " to the db");
+                            }
+                        }
+                        Console.WriteLine("\tAdded artist " + tf.Tag.FirstAlbumArtist);
+                    }
+                    catch (TagLib.CorruptFileException corrupt)
+                    {
+                        Console.WriteLine("\t" + corrupt.Message);
+                    }
+                    catch (SqlException sql)
+                    {
+                        Console.WriteLine("\t" + sql.Message);
+                    }
+                    catch(NullReferenceException nre)
+                    {
+                        Console.WriteLine("\t" + nre.Message);
+                    }
+                }
+            }
+        }
+        static void UpdateArtists(List<Song> songList,SqlConnection conn)
+        {
+            foreach(Song song in songList)
+            {
+                String aName = song.Title;
+                SqlCommand updateComm = new SqlCommand("UPDATE Songs SET [Artist ID] ='(SELECT ");
             }
         }
     }
