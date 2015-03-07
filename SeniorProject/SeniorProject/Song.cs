@@ -8,8 +8,6 @@ namespace SeniorProject
 {
     class Song
     {
-        public int AlbumID;
-        public int ArtistID;
         public String Title;
         public uint TrackNumber;
         public TimeSpan TrackLength;
@@ -19,11 +17,9 @@ namespace SeniorProject
         public Boolean Instrumental;
         public Boolean Soundtrack;
 
-        public Song(int alid, int arid, string t, uint tnum, TimeSpan len, string gen, bool ab, bool ins, bool st)
+        public Song(string t, uint tnum, TimeSpan len, string gen, bool ab, bool ins, bool st)
         {
             // TODO: Complete member initialization
-            this.AlbumID = alid;
-            this.ArtistID = arid;
             this.Title = t;
             this.TrackNumber = tnum;
             this.TrackLength = len;

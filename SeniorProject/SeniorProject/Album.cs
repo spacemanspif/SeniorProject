@@ -8,9 +8,15 @@ namespace SeniorProject
 {
     class Album
     {
-        public int ArtistID;
         public int AlbumID;
         public String Title;
-        public DateTime ReleaseDate;
+        public uint ReleaseDate;
+
+        public Album(string name, uint date)
+        {
+            // TODO: Complete member initialization
+            this.Title=name;
+            this.ReleaseDate = date;
+        }
     }
 }

@@ -31,11 +31,15 @@ namespace SeniorProject
                 //opens a connection to the SQL db
                 using (SqlConnection conn = new SqlConnection())
                 {
-                    conn.ConnectionString = "Server=ADA\\INFO210;Database=DiscoFish;User=sa;Password=changethislater";
+                    conn.ConnectionString = "Server=ADA\\INFO210;Database=DiscoFish;User=sa";
                     conn.Open();
 
                     AddSongToDB(songList, conn);
                     AddArtistsToDB(musicFiles, conn);
+                    AddAlbumsToDB(musicFiles, conn);
+                    AlbumArtists(musicFiles, conn);
+                    AlbumSongs(musicFiles, conn);
+                    SongsArtists(musicFiles, conn);
                 }
             }
         }
@@ -125,7 +129,7 @@ namespace SeniorProject
                         //Creates a new Song object with this information
                         //NOTE: Currently having problems if Genres[] only has the one, removed Subgenre param for the time being
 
-                        Song s = new Song(1, 1, tf.Tag.Title, tf.Tag.Track, tf.Properties.Duration, tf.Tag.FirstGenre, false, false, false);
+                        Song s = new Song(tf.Tag.Title, tf.Tag.Track, tf.Properties.Duration, tf.Tag.FirstGenre, false, false, false);
                         Console.WriteLine("\tAdded song " + tf.Tag.Title);
                         songList.Add(s);
                     }
@@ -147,9 +151,9 @@ namespace SeniorProject
                     String cleanTitle = (song.Title).Replace("'", "");
 
                     //checks to see if song already exists in db
-                    SqlCommand insertCommand = new SqlCommand("INSERT INTO Songs([Song Title],[Album ID],[Artist ID],[Track Length],[Track Number]) SELECT '" + 
-                        cleanTitle + "'," + song.AlbumID + "," + song.ArtistID + ",'" + song.TrackLength + "'," + song.TrackNumber + 
-                        " WHERE NOT EXISTS (SELECT * FROM Songs WHERE [Song Title] = '" + cleanTitle + "');", conn);
+                    SqlCommand insertCommand = new SqlCommand("INSERT INTO Songs([Song Title],[Track Length],[Track Number],Genre) SELECT '" + 
+                        cleanTitle + "','" + song.TrackLength + "'," + song.TrackNumber + ", '"+song.Genre +
+                        "' WHERE NOT EXISTS (SELECT * FROM Songs WHERE [Song Title] = '" + cleanTitle + "');", conn);
                     using (SqlDataReader reader = insertCommand.ExecuteReader())
                     {
                         while (reader.Read())
@@ -207,12 +211,181 @@ namespace SeniorProject
                 }
             }
         }
-        static void UpdateArtists(List<Song> songList,SqlConnection conn)
+        static void AddAlbumsToDB(List<FileInfo> songFileList, SqlConnection conn)
         {
-            foreach(Song song in songList)
+            if (songFileList.Count != 0)
             {
-                String aName = song.Title;
-                SqlCommand updateComm = new SqlCommand("UPDATE Songs SET [Artist ID] ='(SELECT ");
+                foreach (FileInfo fileInfo in songFileList)
+                {
+                    try
+                    {
+                        //utilizes imported Taglib-sharp to know where relevant information is, based on filetype
+                        TagLib.File tf = TagLib.File.Create(fileInfo.FullName);
+
+                        Album a = new Album(tf.Tag.Album,tf.Tag.Year);
+                        String cleanTitle = (a.Title).Replace("'", "");
+                        SqlCommand updateCommand = new SqlCommand("INSERT INTO Album([Album Title],[Release Year]) SELECT'" + cleanTitle + "', " + tf.Tag.Year +
+                                                                    " WHERE NOT EXISTS (SELECT * FROM Album WHERE [Album Title] = '" + cleanTitle + "');", conn);
+                        using (SqlDataReader reader = updateCommand.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                Console.WriteLine("Added " + a.Title + " to the db");
+                            }
+                        }
+                        Console.WriteLine("\tAdded album " + tf.Tag.Album);
+                    }
+                    catch (TagLib.CorruptFileException corrupt)
+                    {
+                        Console.WriteLine("\t" + corrupt.Message);
+                    }
+                    catch (SqlException sql)
+                    {
+                        Console.WriteLine("\t" + sql.Message);
+                    }
+                    catch (NullReferenceException nre)
+                    {
+                        Console.WriteLine("\t" + nre.Message);
+                    }
+                }
+            }
+        }
+        static void AlbumArtists(List<FileInfo> songFileList, SqlConnection conn)
+        {
+            if (songFileList.Count != 0)
+            {
+                foreach (FileInfo fileInfo in songFileList)
+                {
+                    try
+                    {
+                        //utilizes imported Taglib-sharp to know where relevant information is, based on filetype
+                        TagLib.File tf = TagLib.File.Create(fileInfo.FullName);
+
+                        Album al = new Album(tf.Tag.Album, tf.Tag.Year);
+                        Artists ar = new Artists(tf.Tag.FirstAlbumArtist);
+                        String cleanAlbum = tf.Tag.Album.Replace("'", "");
+                        String cleanArtist = tf.Tag.FirstAlbumArtist.Replace("'", "");
+
+                        SqlCommand command = new SqlCommand();
+                        command.Connection = conn;
+                        command.CommandText = "INSERT INTO [Album-Artists](Album.[Album ID],Artists.[Artist ID]) " +
+                            "VALUES((SELECT [Album].[Album ID] FROM Album WHERE [Album Title]='" + cleanAlbum + "'), " +
+                            "(SELECT Artists.[Artist ID] FROM Artists WHERE [Artists Name]='" + cleanArtist + "'))";
+                        
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                Console.WriteLine("Updated table for "+cleanArtist+"'s album "+cleanAlbum);
+                            }
+                        }
+                        Console.WriteLine("\tAdded album " + tf.Tag.Album);
+                    }
+                    catch (TagLib.CorruptFileException corrupt)
+                    {
+                        Console.WriteLine("\t" + corrupt.Message);
+                    }
+                    catch (SqlException sql)
+                    {
+                        Console.WriteLine("\t" + sql.Message);
+                    }
+                    catch (NullReferenceException nre)
+                    {
+                        Console.WriteLine("\t" + nre.Message);
+                    }
+                }
+            }
+        }
+        static void AlbumSongs(List<FileInfo> songFileList, SqlConnection conn)
+        {
+            if (songFileList.Count != 0)
+            {
+                foreach (FileInfo fileInfo in songFileList)
+                {
+                    try
+                    {
+                        //utilizes imported Taglib-sharp to know where relevant information is, based on filetype
+                        TagLib.File tf = TagLib.File.Create(fileInfo.FullName);
+
+                        Album al = new Album(tf.Tag.Album, tf.Tag.Year);
+                        Song s = new Song(tf.Tag.Title);
+                        String cleanAlbum = tf.Tag.Album.Replace("'", "");
+                        String cleanSong = tf.Tag.Title.Replace("'", "");
+
+                        SqlCommand command = new SqlCommand();
+                        command.Connection = conn;
+                        command.CommandText = "INSERT INTO [Album-Songs](Album.[Album ID],Songs.[Song ID]) " +
+                            "VALUES((SELECT [Album].[Album ID] FROM Album WHERE [Album Title]='" + cleanAlbum + "'), " +
+                            "(SELECT Songs.[Song ID] FROM Songs WHERE [Song Title]='" + cleanSong + "'))";
+
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                Console.WriteLine("Updated table for " + cleanAlbum + "'s song " + cleanSong);
+                            }
+                        }
+                        Console.WriteLine("\tAdded album " + tf.Tag.Album);
+                    }
+                    catch (TagLib.CorruptFileException corrupt)
+                    {
+                        Console.WriteLine("\t" + corrupt.Message);
+                    }
+                    catch (SqlException sql)
+                    {
+                        Console.WriteLine("\t" + sql.Message);
+                    }
+                    catch (NullReferenceException nre)
+                    {
+                        Console.WriteLine("\t" + nre.Message);
+                    }
+                }
+            }
+        }
+        static void SongsArtists(List<FileInfo> songFileList, SqlConnection conn)
+        {
+            if (songFileList.Count != 0)
+            {
+                foreach (FileInfo fileInfo in songFileList)
+                {
+                    try
+                    {
+                        //utilizes imported Taglib-sharp to know where relevant information is, based on filetype
+                        TagLib.File tf = TagLib.File.Create(fileInfo.FullName);
+
+                        Song s = new Song(tf.Tag.Title);
+                        Artists ar = new Artists(tf.Tag.FirstAlbumArtist);
+                        String cleanSong = tf.Tag.Title.Replace("'", "");
+                        String cleanArtists = tf.Tag.FirstAlbumArtist.Replace("'", "");
+
+                        SqlCommand command = new SqlCommand();
+                        command.Connection = conn;
+                        command.CommandText = "INSERT INTO [Songs-Artists](Songs.[Song ID],Artists.[Artist ID]) " +
+                            "VALUES((SELECT [Songs].[Song ID] FROM Songs WHERE [Song Title]='" + cleanSong + "'), " +
+                            "(SELECT Artists.[Artist ID] FROM Artists WHERE [Artists Name]='" + cleanArtists + "'))";
+
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                Console.WriteLine("Updated table for " + cleanArtists + "'s song " + cleanSong);
+                            }
+                        }
+                        Console.WriteLine("\tUpdated table for " + cleanArtists + "'s song " + cleanSong);
+                    }
+                    catch (TagLib.CorruptFileException corrupt)
+                    {
+                        Console.WriteLine("\t" + corrupt.Message);
+                    }
+                    catch (SqlException sql)
+                    {
+                        Console.WriteLine("\t" + sql.Message);
+                    }
+                    catch (NullReferenceException nre)
+                    {
+                        Console.WriteLine("\t" + nre.Message);
+                    }
+                }
             }
         }
     }
