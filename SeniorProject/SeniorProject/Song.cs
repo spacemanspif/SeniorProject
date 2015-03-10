@@ -17,14 +17,14 @@ namespace SeniorProject
         public Boolean Instrumental;
         public Boolean Soundtrack;
 
-        public Song(string t, uint tnum, TimeSpan len, string gen, bool ab, bool ins, bool st)
+        public Song(string t, uint tnum, TimeSpan len, string gen, string sgen, bool ab, bool ins, bool st)
         {
             // TODO: Complete member initialization
             this.Title = t;
             this.TrackNumber = tnum;
             this.TrackLength = len;
             this.Genre = gen;
-            //this.SubGenre = sgen;
+            this.SubGenre = sgen;
             this.AudioBook = ab;
             this.Instrumental = ins;
             this.Soundtrack = st;

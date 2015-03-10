@@ -31,7 +31,7 @@ namespace SeniorProject
                 //opens a connection to the SQL db
                 using (SqlConnection conn = new SqlConnection())
                 {
-                    conn.ConnectionString = "Server=ADA\\INFO210;Database=DiscoFish;User=sa";
+                    conn.ConnectionString = "Server=ADA\\INFO210;Database=DiscoFish;User=sa;password=changethislater";
                     conn.Open();
 
                     AddSongToDB(songList, conn);
@@ -127,15 +127,28 @@ namespace SeniorProject
                         //utilizes imported Taglib-sharp to know where relevant information is, based on filetype
                         TagLib.File tf = TagLib.File.Create(fileInfo.FullName);
                         //Creates a new Song object with this information
-                        //NOTE: Currently having problems if Genres[] only has the one, removed Subgenre param for the time being
 
-                        Song s = new Song(tf.Tag.Title, tf.Tag.Track, tf.Properties.Duration, tf.Tag.FirstGenre, false, false, false);
+                        bool score = false;
+                        string subgen = "";
+                        if (tf.Tag.Album.Contains("Soundtrack") || tf.Tag.Album.Contains("OST") || tf.Tag.Album.Contains("soundtrack") || tf.Tag.Album.Contains("score") || tf.Tag.Album.Contains("Score") || tf.Tag.Album.Contains("movie"))
+                        {
+                            score = true;
+                        }
+                        if(tf.Tag.Genres.Length >= 2)
+                        {
+                            subgen = tf.Tag.Genres[1].ToString();
+                        }
+                        Song s = new Song(tf.Tag.Title, tf.Tag.Track, tf.Properties.Duration, tf.Tag.FirstGenre, subgen, false, false, score);
                         Console.WriteLine("\tAdded song " + tf.Tag.Title);
                         songList.Add(s);
                     }
                     catch (TagLib.CorruptFileException corrupt)
                     {
                         Console.WriteLine("\t" + corrupt.Message);
+                    }
+                    catch(NullReferenceException nre)
+                    {
+                        Console.WriteLine("\t" + nre.Message);
                     }
                 }
             }
@@ -151,9 +164,9 @@ namespace SeniorProject
                     String cleanTitle = (song.Title).Replace("'", "");
 
                     //checks to see if song already exists in db
-                    SqlCommand insertCommand = new SqlCommand("INSERT INTO Songs([Song Title],[Track Length],[Track Number],Genre) SELECT '" + 
-                        cleanTitle + "','" + song.TrackLength + "'," + song.TrackNumber + ", '"+song.Genre +
-                        "' WHERE NOT EXISTS (SELECT * FROM Songs WHERE [Song Title] = '" + cleanTitle + "');", conn);
+                    SqlCommand insertCommand = new SqlCommand("INSERT INTO Songs(Title,Length,TrackNumber,Genre,SubGenre,IsScore) SELECT '" + 
+                        cleanTitle + "','" + song.TrackLength + "'," + song.TrackNumber + ", '"+song.Genre + "', '" + song.SubGenre + "', '" + song.Soundtrack +
+                        "' WHERE NOT EXISTS (SELECT * FROM Songs WHERE [Title] = '" + cleanTitle + "');", conn);
                     using (SqlDataReader reader = insertCommand.ExecuteReader())
                     {
                         while (reader.Read())
@@ -185,8 +198,8 @@ namespace SeniorProject
 
                         Artists a = new Artists(tf.Tag.FirstAlbumArtist);
                         String cleanName = (a.Name).Replace("'", "");
-                        SqlCommand updateCommand = new SqlCommand("INSERT INTO Artists([Artists Name]) SELECT('" + cleanName + 
-                                                                    "')WHERE NOT EXISTS (SELECT * FROM Artists WHERE [Artists Name] = '" + cleanName + "');",conn);
+                        SqlCommand updateCommand = new SqlCommand("INSERT INTO Artists(Name) SELECT('" + cleanName + 
+                                                                    "')WHERE NOT EXISTS (SELECT * FROM Artists WHERE Name = '" + cleanName + "');",conn);
                         using (SqlDataReader reader = updateCommand.ExecuteReader())
                         {
                             while (reader.Read())
@@ -224,8 +237,8 @@ namespace SeniorProject
 
                         Album a = new Album(tf.Tag.Album,tf.Tag.Year);
                         String cleanTitle = (a.Title).Replace("'", "");
-                        SqlCommand updateCommand = new SqlCommand("INSERT INTO Album([Album Title],[Release Year]) SELECT'" + cleanTitle + "', " + tf.Tag.Year +
-                                                                    " WHERE NOT EXISTS (SELECT * FROM Album WHERE [Album Title] = '" + cleanTitle + "');", conn);
+                        SqlCommand updateCommand = new SqlCommand("INSERT INTO Albums(Name, ReleaseYear) SELECT'" + cleanTitle + "', " + tf.Tag.Year +
+                                                                    " WHERE NOT EXISTS (SELECT * FROM Albums WHERE Name = '" + cleanTitle + "');", conn);
                         using (SqlDataReader reader = updateCommand.ExecuteReader())
                         {
                             while (reader.Read())
@@ -268,9 +281,9 @@ namespace SeniorProject
 
                         SqlCommand command = new SqlCommand();
                         command.Connection = conn;
-                        command.CommandText = "INSERT INTO [Album-Artists](Album.[Album ID],Artists.[Artist ID]) " +
-                            "VALUES((SELECT [Album].[Album ID] FROM Album WHERE [Album Title]='" + cleanAlbum + "'), " +
-                            "(SELECT Artists.[Artist ID] FROM Artists WHERE [Artists Name]='" + cleanArtist + "'))";
+                        command.CommandText = "INSERT INTO [Albums-Artists](Albums.AlbumID,Artists.ArtistID) " +
+                            "VALUES((SELECT [Albums].[AlbumID] FROM Albums WHERE Name='" + cleanAlbum + "'), " +
+                            "(SELECT Artists.[ArtistID] FROM Artists WHERE Name='" + cleanArtist + "'))";
                         
                         using (SqlDataReader reader = command.ExecuteReader())
                         {
@@ -314,9 +327,9 @@ namespace SeniorProject
 
                         SqlCommand command = new SqlCommand();
                         command.Connection = conn;
-                        command.CommandText = "INSERT INTO [Album-Songs](Album.[Album ID],Songs.[Song ID]) " +
-                            "VALUES((SELECT [Album].[Album ID] FROM Album WHERE [Album Title]='" + cleanAlbum + "'), " +
-                            "(SELECT Songs.[Song ID] FROM Songs WHERE [Song Title]='" + cleanSong + "'))";
+                        command.CommandText = "INSERT INTO [Albums-Songs](Albums.[AlbumID],Songs.[SongID]) " +
+                            "VALUES((SELECT [Albums].[AlbumID] FROM Albums WHERE Name='" + cleanAlbum + "'), " +
+                            "(SELECT Songs.[SongID] FROM Songs WHERE Title='" + cleanSong + "'))";
 
                         using (SqlDataReader reader = command.ExecuteReader())
                         {
@@ -360,9 +373,9 @@ namespace SeniorProject
 
                         SqlCommand command = new SqlCommand();
                         command.Connection = conn;
-                        command.CommandText = "INSERT INTO [Songs-Artists](Songs.[Song ID],Artists.[Artist ID]) " +
-                            "VALUES((SELECT [Songs].[Song ID] FROM Songs WHERE [Song Title]='" + cleanSong + "'), " +
-                            "(SELECT Artists.[Artist ID] FROM Artists WHERE [Artists Name]='" + cleanArtists + "'))";
+                        command.CommandText = "INSERT INTO [Artists-Songs](Songs.[SongID],Artists.[ArtistID]) " +
+                            "VALUES((SELECT [Songs].[SongID] FROM Songs WHERE Title='" + cleanSong + "'), " +
+                            "(SELECT Artists.[ArtistID] FROM Artists WHERE Name='" + cleanArtists + "'))";
 
                         using (SqlDataReader reader = command.ExecuteReader())
                         {
