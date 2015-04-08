@@ -7,6 +7,7 @@ using System.IO;
 using System.Collections;
 using System.Diagnostics;
 using System.Data.SqlClient;
+using Microsoft.VisualBasic;
 
 
 namespace SeniorProject
@@ -15,9 +16,15 @@ namespace SeniorProject
     {
         static void Main(string[] args)
         {
-            //Filepath, eventually given by user, that will be checked for music
-            string filePath = "D:/Music";
-
+            Console.WriteLine("Where would you like us to look for music?");
+            Console.WriteLine("(Leave blank for D:/Music)");
+            
+            //Filepath, given by user, that will be checked for music
+            string filePath = Console.ReadLine();
+            if(filePath.Length == 0)
+            {
+                filePath = "D:/Music";
+            }
             //runs method to check for subdirecs
             Boolean hasDir = ContainsDir(filePath);
 
@@ -31,7 +38,8 @@ namespace SeniorProject
                 //opens a connection to the SQL db
                 using (SqlConnection conn = new SqlConnection())
                 {
-                    conn.ConnectionString = "Server=ADA\\INFO210;Database=DiscoFish;User=sa;password=changethislater";
+                    //conn.ConnectionString = "Server=ADA\\INFO210;Database=DiscoFish;User=sa;password=changethislater";
+                    conn.ConnectionString = "Server=bzc9y25rkh.database.windows.net;Database=DiscoFish;User=TimbreSQL;password=DiscoF1sh";
                     conn.Open();
 
                     AddSongToDB(songList, conn);
@@ -130,7 +138,8 @@ namespace SeniorProject
 
                         bool score = false;
                         string subgen = "";
-                        if (tf.Tag.Album.Contains("Soundtrack") || tf.Tag.Album.Contains("OST") || tf.Tag.Album.Contains("soundtrack") || tf.Tag.Album.Contains("score") || tf.Tag.Album.Contains("Score") || tf.Tag.Album.Contains("movie"))
+                        if (tf.Tag.Album.Contains("Soundtrack") || tf.Tag.Album.Contains("OST") || tf.Tag.Album.Contains("soundtrack") || tf.Tag.Album.Contains("score") || tf.Tag.Album.Contains("Score") || tf.Tag.Album.Contains("movie")
+                             || tf.Tag.FirstGenre.Contains("Soundtrack") || tf.Tag.FirstGenre.Contains("Television") || tf.Tag.FirstGenre.Contains("Movie"))
                         {
                             score = true;
                         }
